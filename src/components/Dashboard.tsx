@@ -179,7 +179,7 @@ export default function Dashboard({ records, onNavigate, isAdmin, workflows = []
               <p className={`text-4xl font-black tracking-tighter ${card.textColor || "text-[var(--text-bright)]"}`}>
                 {card.value.toString().padStart(2, '0')}
               </p>
-              <div className={`p-2 rounded-lg bg-black/5 dark:bg-white/5 opacity-50 group-hover:opacity-100 transition-opacity`}>
+              <div className={`p-2 rounded-lg bg-black/5 opacity-50 group-hover:opacity-100 transition-opacity`}>
                 {i === 0 ? <Database size={16} /> : i === 1 ? <Clock size={16} /> : i === 2 ? <CheckCircle2 size={16} /> : i === 3 ? <ShieldX size={16} /> : <FileWarning size={16} />}
               </div>
             </div>
@@ -302,38 +302,38 @@ export default function Dashboard({ records, onNavigate, isAdmin, workflows = []
 
       <div className="grid grid-cols-12 gap-8">
         {/* Governance & Risk Alerts Table */}
-        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-[#0c131e] rounded-[2.5rem] flex flex-col overflow-hidden relative border-2 border-[#03440c] dark:border-emerald-700 shadow-md transition-all">
-          <div className="p-6 border-b border-black/5 dark:border-white/5 flex justify-between items-center bg-black/5 dark:bg-white/5">
+        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-[var(--bg-card-page)] rounded-[2.5rem] flex flex-col overflow-hidden relative border-2 border-[#03440c] shadow-md transition-all">
+          <div className="p-6 border-b border-black/5 flex justify-between items-center bg-black/5">
             <div className="flex items-center gap-3">
               <div className="size-2.5 rounded-full bg-[#03440c] dark:bg-emerald-500 shadow-[0_0_10px_rgba(3,68,12,0.6)] dark:shadow-[0_0_10px_rgba(16,185,129,0.6)] animate-pulse"></div>
-              <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight text-base">Monitoramento de Governança e Risco</h3>
+              <h3 className="font-black text-slate-900 uppercase tracking-tight text-base">Monitoramento de Governança e Risco</h3>
             </div>
             <button 
               onClick={() => onNavigate("inventory")}
-              className="text-[10px] bg-white/40 dark:bg-white/10 text-slate-800 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/20 px-5 py-2 rounded-xl font-black transition-all border border-slate-300 dark:border-white/10 active:scale-95 uppercase tracking-widest"
+              className="text-[10px] bg-white/40 dark:bg-white/10 text-slate-800 hover:bg-white/60 dark:hover:bg-white/20 px-5 py-2 rounded-xl font-black transition-all border border-slate-300 dark:border-white/10 active:scale-95 uppercase tracking-widest"
             >
               Ver Tudo →
             </button>
           </div>
           <div className="overflow-auto flex-1 custom-scrollbar">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-[#03440c]/10 dark:bg-emerald-950/20 text-[10px] uppercase text-[#03440c] dark:text-emerald-400 sticky top-0 z-10 font-black tracking-widest border-b border-black/5 dark:border-white/5">
+              <thead className="bg-[#03440c]/10 dark:bg-emerald-950/20 text-[10px] uppercase text-[#03440c] dark:text-emerald-400 sticky top-0 z-10 font-black tracking-widest border-b border-black/5">
                 <tr>
-                  <th className="px-6 py-5 border-b border-black/5 dark:border-white/5">ID da IA</th>
-                  <th className="px-6 py-5 border-b border-black/5 dark:border-white/5">IA / Setor</th>
-                  <th className="px-6 py-5 border-b border-black/5 dark:border-white/5 text-center">Risco</th>
-                  <th className="px-6 py-5 border-b border-black/5 dark:border-white/5">Status</th>
+                  <th className="px-6 py-5 border-b border-black/5">ID da IA</th>
+                  <th className="px-6 py-5 border-b border-black/5">IA / Setor</th>
+                  <th className="px-6 py-5 border-b border-black/5 text-center">Risco</th>
+                  <th className="px-6 py-5 border-b border-black/5">Status</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {records.slice(0, 6).map((record) => (
-                  <tr key={record.id} className="border-b border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-all group font-medium text-slate-800 dark:text-slate-200">
+                  <tr key={record.id} className="border-b border-black/5 hover:bg-black/5 transition-all group font-medium text-slate-800">
                     <td className="px-6 py-5 whitespace-nowrap">
-                       <span className="font-mono text-[10px] text-slate-900 dark:text-slate-200 bg-white/60 dark:bg-white/10 px-2 py-1 rounded border border-slate-200 dark:border-white/10 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{record.id}</span>
+                       <span className="font-mono text-[10px] text-slate-900 bg-white/60 dark:bg-white/10 px-2 py-1 rounded border border-slate-200 dark:border-white/10 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{record.id}</span>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-slate-950 dark:group-hover:text-emerald-400 transition-colors uppercase tracking-tight">{record.nomeFerramenta}</span>
+                        <span className="font-bold text-slate-900 group-hover:text-slate-950 dark:group-hover:text-emerald-400 transition-colors uppercase tracking-tight">{record.nomeFerramenta}</span>
                         <div className="flex items-center gap-1.5 mt-1">
                            <div className="size-1 rounded-full bg-slate-600 dark:bg-slate-400"></div>
                            <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-tighter">{record.unidadeSetor}</span>
@@ -434,7 +434,7 @@ export default function Dashboard({ records, onNavigate, isAdmin, workflows = []
                       </div>
                       <span className="font-mono text-brand-green font-bold tabular-nums">{stat.percent}%</span>
                     </div>
-                    <div className="w-full h-1.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-black/5 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${stat.percent}%` }}
@@ -487,7 +487,7 @@ export default function Dashboard({ records, onNavigate, isAdmin, workflows = []
             onClick={exportCSV}
             className="flex items-center gap-3 text-xs font-bold text-[var(--text-muted)] hover:text-brand-green transition-all group"
           >
-            <div className="p-2 bg-black/5 dark:bg-white/5 border border-[var(--border-lab)] rounded-xl group-hover:border-brand-green/30 transition-colors">
+            <div className="p-2 bg-black/5 border border-[var(--border-lab)] rounded-xl group-hover:border-brand-green/30 transition-colors">
               <Database size={16} />
             </div>
             Exportar CSV
@@ -496,7 +496,7 @@ export default function Dashboard({ records, onNavigate, isAdmin, workflows = []
             onClick={exportJSON}
             className="flex items-center gap-3 text-xs font-bold text-[var(--text-muted)] hover:text-lab-cyan transition-all group"
           >
-            <div className="p-2 bg-black/5 dark:bg-white/5 border border-[var(--border-lab)] rounded-xl group-hover:border-lab-cyan/30 transition-colors">
+            <div className="p-2 bg-black/5 border border-[var(--border-lab)] rounded-xl group-hover:border-lab-cyan/30 transition-colors">
               <HardDrive size={16} />
             </div>
             Exportar JSON
