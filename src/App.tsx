@@ -504,33 +504,121 @@ export default function App() {
     if (!record) return;
 
     const isAdmin = isCurrentUserAdmin;
-    const historyEntry = {
-      date: new Date().toISOString(),
-      user: profile?.full_name || "Admin",
-      action: status === StatusAuditoria.APROVADO ? "Aprovação Técnica" : status === StatusAuditoria.NEGADO ? "Reprovação/Bloqueio" : "Reversão de Status",
-      message: comment || `Status de auditoria atualizado para ${status}`
-    };
 
-    // Keep statusUso in sync with statusAuditoria so it updates the Status view for users
-    const newStatusUso = status === StatusAuditoria.APROVADO 
-      ? StatusUso.APROVADO 
-      : status === StatusAuditoria.NEGADO 
-      ? StatusUso.NAO_APROVADO 
-      : StatusUso.EM_AVALIACAO;
-
-    const updatedRecord = { 
-      ...record, 
-      statusAuditoria: status,
-      statusUso: newStatusUso,
-      historico: [historyEntry, ...(record.historico || [])]
-    };
-    
-    // Optimistic update
-    setRecords(prev => prev.map(r => r.id === recordId ? updatedRecord : r));
-    
     try {
-      await updateRecord(updatedRecord, user?.id, isAdmin);
+      // Buscar workflow atual da IA
+      const { data: wfData } = await supabase
+        .from("approval_workflows")
+        .select("*, steps:approval_steps(*)")
+        .eq("ia_record_id", recordId)
+        .single();
+
+      if (wfData) {
+        const currentStep = wfData.current_step;
+        const totalSteps = approvalConfig.steps.length;
+        const stepConfig = approvalConfig.steps.find(s => s.stepNumber === currentStep);
+        const isOpinionOnly = stepConfig?.isOpinionOnly ?? false;
+
+        // Registrar decisão na etapa atual
+        const decisionStatus = status === StatusAuditoria.APROVADO ? "aprovado" :
+                               status === StatusAuditoria.NEGADO ? "negado" : "aguardando";
+
+        await supabase
+          .from("approval_steps")
+          .update({
+            status: isOpinionOnly ? "opiniao" : decisionStatus,
+            comment: comment || null,
+            decided_at: new Date().toISOString(),
+          })
+          .eq("workflow_id", wfData.id)
+          .eq("step_number", currentStep);
+
+        // Determinar próximo passo
+        let nextStep = currentStep + 1;
+        let finalStatus = "pendente";
+        let newAuditStatus = StatusAuditoria.PENDENTE;
+        let newStatusUso = StatusUso.EM_AVALIACAO;
+
+        if (!isOpinionOnly && status === StatusAuditoria.NEGADO) {
+          // Negado por etapa bloqueante → encerra imediatamente
+          finalStatus = "negado";
+          newAuditStatus = StatusAuditoria.NEGADO;
+          newStatusUso = StatusUso.NAO_APROVADO;
+          await supabase
+            .from("approval_workflows")
+            .update({ current_step: currentStep, final_status: "negado", completed_at: new Date().toISOString() })
+            .eq("id", wfData.id);
+        } else if (nextStep > totalSteps) {
+          // Última etapa aprovada → IA aprovada
+          finalStatus = "aprovado";
+          newAuditStatus = StatusAuditoria.APROVADO;
+          newStatusUso = StatusUso.APROVADO;
+          await supabase
+            .from("approval_workflows")
+            .update({ current_step: nextStep, final_status: "aprovado", completed_at: new Date().toISOString() })
+            .eq("id", wfData.id);
+        } else {
+          // Avança para próxima etapa
+          await supabase
+            .from("approval_workflows")
+            .update({ current_step: nextStep })
+            .eq("id", wfData.id);
+          newAuditStatus = StatusAuditoria.PENDENTE;
+          newStatusUso = StatusUso.EM_AVALIACAO;
+        }
+
+        // Atualizar o registro da IA com o novo status
+        const actionLabel = status === StatusAuditoria.APROVADO
+          ? `Etapa ${currentStep} aprovada por ${stepConfig?.roleName ?? "Responsável"}`
+          : status === StatusAuditoria.NEGADO
+            ? `Etapa ${currentStep} negada por ${stepConfig?.roleName ?? "Responsável"}`
+            : "Revisão de Status";
+
+        const historyEntry = {
+          date: new Date().toISOString(),
+          user: profile?.full_name || "Admin",
+          action: actionLabel,
+          message: comment || actionLabel
+        };
+
+        const updatedRecord = {
+          ...record,
+          statusAuditoria: newAuditStatus,
+          statusUso: newStatusUso,
+          historico: [historyEntry, ...(record.historico || [])]
+        };
+
+        setRecords(prev => prev.map(r => r.id === recordId ? updatedRecord : r));
+        await updateRecord(updatedRecord, user?.id, isAdmin);
+
+      } else {
+        // Sem workflow — comportamento simples (compatibilidade)
+        const newStatusUso = status === StatusAuditoria.APROVADO
+          ? StatusUso.APROVADO
+          : status === StatusAuditoria.NEGADO
+          ? StatusUso.NAO_APROVADO
+          : StatusUso.EM_AVALIACAO;
+
+        const historyEntry = {
+          date: new Date().toISOString(),
+          user: profile?.full_name || "Admin",
+          action: status === StatusAuditoria.APROVADO ? "Aprovação" : status === StatusAuditoria.NEGADO ? "Reprovação" : "Revisão",
+          message: comment || `Status atualizado para ${status}`
+        };
+
+        const updatedRecord = {
+          ...record,
+          statusAuditoria: status,
+          statusUso: newStatusUso,
+          historico: [historyEntry, ...(record.historico || [])]
+        };
+
+        setRecords(prev => prev.map(r => r.id === recordId ? updatedRecord : r));
+        await updateRecord(updatedRecord, user?.id, isAdmin);
+      }
+
       await refreshRecords();
+      await loadApprovalData();
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       alert("Erro ao atualizar o status da auditoria.");
@@ -852,6 +940,8 @@ export default function App() {
                   onViewRecord={handleView} 
                   onUpdateUserRole={handleUpdateUserRole}
                   onDeleteUser={handleDeleteUser}
+                  approvalConfig={approvalConfig}
+                  onSaveApprovalConfig={handleSaveApprovalConfig}
                 />
               )}
               {activeTab === "chat" && (
