@@ -6,7 +6,7 @@ import {
   ChevronLeft, ExternalLink
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IARecord, StatusAuditoria, StatusUso, UserProfile } from "../types";
+import { IARecord, StatusAuditoria, StatusUso, UserProfile, ApprovalConfig } from "../types";
 
 interface AdminPanelProps {
   records: IARecord[];
@@ -174,9 +174,9 @@ export default function AdminPanel({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { label: "Pendentes", value: stats.pending, color: "text-red-600 dark:text-red-500", icon: AlertTriangle, bg: "bg-red-500/10", borderColor: "border-slate-200" },
+              { label: "Pendentes", value: stats.pending, color: "text-red-600", icon: AlertTriangle, bg: "bg-red-500/10", borderColor: "border-slate-200" },
               { label: "Aprovados", value: stats.approved, color: "text-[#03440c]", icon: CheckCircle2, bg: "bg-[#03440c]/10", borderColor: "border-slate-200" },
-              { label: "Negados", value: stats.denied, color: "text-red-600 dark:text-red-500", icon: XCircle, bg: "bg-red-500/10", borderColor: "border-slate-200" }
+              { label: "Negados", value: stats.denied, color: "text-red-600", icon: XCircle, bg: "bg-red-500/10", borderColor: "border-slate-200" }
             ].map((s, idx) => (
               <div 
                 key={idx} 
@@ -261,7 +261,7 @@ export default function AdminPanel({
             <div className="grid grid-cols-1 gap-4">
               {filteredRecords.length > 0 ? (
                 filteredRecords.map((record) => (
-                  <div key={record.id} className="bg-white dark:bg-white/5 p-6 rounded-[2.5rem] border border-emerald-200/60 dark:border-emerald-700/40 shadow-xl shadow-emerald-200/5 dark:shadow-none hover:border-emerald-500/50 hover:shadow-emerald-400/10 transition-all group flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
+                  <div key={record.id} className="bg-white dark:bg-white/5 p-6 rounded-[2.5rem] border border-emerald-200/60/40 shadow-xl shadow-emerald-200/5 dark:shadow-none hover:border-emerald-500/50 hover:shadow-emerald-400/10 transition-all group flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
                     <div className={`absolute top-0 left-0 w-1.5 h-full ${
                       record.statusAuditoria === StatusAuditoria.APROVADO ? "bg-emerald-500" :
                       record.statusAuditoria === StatusAuditoria.NEGADO ? "bg-lab-red" :
@@ -275,7 +275,7 @@ export default function AdminPanel({
                     <div className="flex-1 space-y-1 min-w-0">
                       <div className="flex items-center gap-3">
                         <h3 className="text-xl font-black text-emerald-700 dark:text-brand-green uppercase tracking-tight truncate">{record.nomeFerramenta}</h3>
-                        <span className="text-[10px] font-mono text-emerald-900 dark:text-white bg-white/50 dark:bg-emerald-900/40 px-2 py-0.5 rounded border border-emerald-200/50 dark:border-emerald-700/30 whitespace-nowrap">{record.id}</span>
+                        <span className="text-[10px] font-mono text-emerald-900 dark:text-white bg-white/50 dark:bg-emerald-900/40 px-2 py-0.5 rounded border border-emerald-200/50/30 whitespace-nowrap">{record.id}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
                         <button 
@@ -284,8 +284,8 @@ export default function AdminPanel({
                         >
                           <LayoutGrid size={12} /> {record.unidadeSetor}
                         </button>
-                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400/70 group-hover:text-emerald-600 dark:group-hover:text-brand-green transition-colors"><Users size={12} /> {record.responsavelPreenchimento}</span>
-                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400/70"><AlertTriangle size={12} /> {new Date(record.createdAt).toLocaleDateString()}</span>
+                        <span className="flex items-center gap-1.5 text-emerald-600 group-hover:text-emerald-600 dark:group-hover:text-brand-green transition-colors"><Users size={12} /> {record.responsavelPreenchimento}</span>
+                        <span className="flex items-center gap-1.5 text-emerald-600"><AlertTriangle size={12} /> {new Date(record.createdAt).toLocaleDateString()}</span>
                         <span className={`flex items-center gap-1 mt-1 sm:mt-0 ${record.usaDadosSensiveis === "Sim" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600/60 dark:text-emerald-500/60"}`}>
                           <ShieldAlert size={12} /> {record.usaDadosSensiveis === "Sim" ? "Dados Sensíveis" : "Dados Comuns"}
                         </span>
@@ -367,7 +367,7 @@ export default function AdminPanel({
                 <div 
                   key={i} 
                   onClick={() => setSelectedSector(sector)}
-                  className="bg-white dark:bg-white/5 p-8 rounded-[2.5rem] border border-emerald-200/50 dark:border-emerald-700/30 shadow-lg shadow-emerald-200/5 dark:shadow-none relative overflow-hidden group hover:border-emerald-400/40 hover:shadow-emerald-400/10 transition-all hover:-translate-y-1 cursor-pointer"
+                  className="bg-white dark:bg-white/5 p-8 rounded-[2.5rem] border border-emerald-200/50/30 shadow-lg shadow-emerald-200/5 dark:shadow-none relative overflow-hidden group hover:border-emerald-400/40 hover:shadow-emerald-400/10 transition-all hover:-translate-y-1 cursor-pointer"
                 >
                   <div className="absolute -top-4 -right-4 size-32 bg-emerald-400/5 rounded-full blur-2xl group-hover:bg-emerald-400/10 transition-colors"></div>
                   <div className="relative z-10">
@@ -422,7 +422,7 @@ export default function AdminPanel({
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Stats Sidebar */}
                 <div className="lg:col-span-1 space-y-6">
-                  <div className="bg-white dark:bg-white/5 p-8 rounded-[2.5rem] border border-emerald-200/60 dark:border-emerald-700/40 shadow-xl shadow-slate-200/30 dark:shadow-none">
+                  <div className="bg-white dark:bg-white/5 p-8 rounded-[2.5rem] border border-emerald-200/60/40 shadow-xl shadow-slate-200/30 dark:shadow-none">
                     <div className="size-16 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-center text-lab-cyan shadow-sm mb-6">
                       <LayoutGrid size={32} />
                     </div>
@@ -473,7 +473,7 @@ export default function AdminPanel({
                 {/* Main Content Area */}
                 <div className="lg:col-span-3 space-y-6">
                   {selectedSectorInfo.records.map((record) => (
-                    <div key={record.id} className="bg-white dark:bg-white/5 p-6 rounded-[2rem] border border-emerald-200/60 dark:border-emerald-700/40 shadow-xl shadow-emerald-200/5 dark:shadow-none hover:border-emerald-500/50 transition-all flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden group">
+                    <div key={record.id} className="bg-white dark:bg-white/5 p-6 rounded-[2rem] border border-emerald-200/60/40 shadow-xl shadow-emerald-200/5 dark:shadow-none hover:border-emerald-500/50 transition-all flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden group">
                       <div className={`absolute top-0 left-0 w-1.5 h-full ${
                         record.statusAuditoria === StatusAuditoria.APROVADO ? "bg-emerald-500" :
                         record.statusAuditoria === StatusAuditoria.NEGADO ? "bg-lab-red" :
@@ -535,14 +535,14 @@ export default function AdminPanel({
           )}
 
           {activeTab === "users" && !selectedUser && (
-            <div className="bg-white dark:bg-white/5 rounded-[3rem] border border-emerald-200/60 dark:border-emerald-700/40 overflow-hidden shadow-xl shadow-emerald-200/5 dark:shadow-none">
+            <div className="bg-white dark:bg-white/5 rounded-[3rem] border border-emerald-200/60/40 overflow-hidden shadow-xl shadow-emerald-200/5 dark:shadow-none">
                <div className="p-8 border-b border-emerald-100/30 dark:border-emerald-900/30 bg-white/50 dark:bg-black/20 flex justify-between items-center">
                   <div>
                     <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Responsáveis</h3>
                     <p className="text-[10px] text-emerald-600/60 dark:text-emerald-500/60 font-extrabold uppercase tracking-[0.2em] mt-1">Gestão de acessos e responsabilidade técnica</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="px-4 py-1.5 bg-white dark:bg-white/10 rounded-full text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest border border-emerald-100/50 dark:border-emerald-700/20 shadow-sm">Total: {stats.uniqueUsers} Usuários</span>
+                    <span className="px-4 py-1.5 bg-white dark:bg-white/10 rounded-full text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest border border-emerald-100/50/20 shadow-sm">Total: {stats.uniqueUsers} Usuários</span>
                   </div>
                </div>
                <table className="w-full text-left">
@@ -615,7 +615,7 @@ export default function AdminPanel({
                           </td>
                           <td className="px-8 py-6">
                             {hasPending ? (
-                              <span className="flex items-center gap-2 text-red-600 dark:text-red-500 text-[10px] font-black uppercase tracking-widest bg-red-50 dark:bg-red-500/10 px-3 py-1 rounded-full border border-red-200 dark:border-red-500/20">
+                              <span className="flex items-center gap-2 text-red-600 text-[10px] font-black uppercase tracking-widest bg-red-50 dark:bg-red-500/10 px-3 py-1 rounded-full border border-red-200 dark:border-red-500/20">
                                 <AlertTriangle size={12} /> Ação Necessária
                               </span>
                             ) : (
@@ -733,7 +733,7 @@ export default function AdminPanel({
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Profile Profile Sidebar */}
                 <div className="lg:col-span-1 space-y-6">
-                  <div className="bg-white dark:bg-white/5 p-8 rounded-[3rem] border border-emerald-200/60 dark:border-emerald-700/40 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden">
+                  <div className="bg-white dark:bg-white/5 p-8 rounded-[3rem] border border-emerald-200/60/40 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-lab-blue/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
                     
                     <div className="relative z-10">
@@ -774,7 +774,7 @@ export default function AdminPanel({
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-white/5 p-8 rounded-[3rem] border border-emerald-200/60 dark:border-emerald-700/40 shadow-xl shadow-slate-200/30 dark:shadow-none">
+                  <div className="bg-white dark:bg-white/5 p-8 rounded-[3rem] border border-emerald-200/60/40 shadow-xl shadow-slate-200/30 dark:shadow-none">
                     <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-slate-100 dark:border-white/5 pb-2">Métricas de Atividade</h3>
                     <div className="grid grid-cols-1 gap-4">
                       <div className="flex justify-between items-center bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-slate-100 dark:border-white/10 group hover:border-lab-cyan/30 transition-colors">
@@ -807,7 +807,7 @@ export default function AdminPanel({
                   </div>
 
                   {selectedUserInfo.records.map((record) => (
-                    <div key={record.id} className="bg-white dark:bg-white/5 p-6 rounded-[2.5rem] border border-emerald-200/60 dark:border-emerald-700/40 shadow-xl shadow-emerald-200/5 dark:shadow-none hover:border-emerald-500/50 transition-all flex flex-col sm:flex-row items-center gap-8 relative overflow-hidden group">
+                    <div key={record.id} className="bg-white dark:bg-white/5 p-6 rounded-[2.5rem] border border-emerald-200/60/40 shadow-xl shadow-emerald-200/5 dark:shadow-none hover:border-emerald-500/50 transition-all flex flex-col sm:flex-row items-center gap-8 relative overflow-hidden group">
                       <div className={`absolute top-0 left-0 w-2 h-full ${
                         record.statusAuditoria === StatusAuditoria.APROVADO ? "bg-emerald-500" :
                         record.statusAuditoria === StatusAuditoria.NEGADO ? "bg-lab-red" :
