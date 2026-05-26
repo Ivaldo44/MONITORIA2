@@ -200,7 +200,7 @@ export default function AdminPanel({
       {/* Admin Navigation */}
       <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white shadow-md p-3 rounded-[2.5rem] border-2 border-[#03440c] transition-all">
         <div className="flex items-center gap-1 w-full xl:w-auto p-1 bg-slate-100 rounded-2xl border border-slate-200">
-          {(["approvals", "sectors", "users"] as AdminTab[]).map(tab => (
+          {(["approvals", "sectors", "users", "workflow"] as AdminTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setSelectedSector(null); setSelectedUser(null); }}
@@ -304,8 +304,8 @@ export default function AdminPanel({
                     </div>
 
                     <div className="flex items-center gap-4 border-l border-emerald-100 dark:border-emerald-800/20 pl-6">
-                      <div className="text-right mr-4 hidden sm:block">
-                         <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">Resultado Final</p>
+                      <div className="text-right mr-4 hidden sm:block space-y-1.5">
+                         <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Resultado Final</p>
                          <span className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest border shadow-sm ${
                            record.statusAuditoria === StatusAuditoria.APROVADO ? "bg-brand-green/10 text-brand-green border-brand-green/20" :
                            record.statusAuditoria === StatusAuditoria.NEGADO ? "bg-lab-red/10 text-lab-red border-lab-red/20" :
@@ -313,6 +313,20 @@ export default function AdminPanel({
                          }`}>
                            {record.statusAuditoria || "Pendente"}
                          </span>
+                         {record.statusAuditoria === StatusAuditoria.PENDENTE && approvalConfig?.steps && (
+                           <div className="flex items-center gap-1 justify-end flex-wrap">
+                             {approvalConfig.steps.map((step, idx) => {
+                               const isActive = idx === 0; // simplificado - etapa 1 ativa por padrão para pendentes
+                               return (
+                                 <div key={step.stepNumber} title={step.roleName} className={`size-4 rounded-full flex items-center justify-center text-[7px] font-black border ${
+                                   isActive ? "bg-amber-400 border-amber-500 text-white animate-pulse" : "bg-black/5 border-black/10 text-slate-400"
+                                 }`}>
+                                   {step.stepNumber}
+                                 </div>
+                               );
+                             })}
+                           </div>
+                         )}
                       </div>
 
                       <div className="flex flex-col sm:flex-row items-center gap-3">
