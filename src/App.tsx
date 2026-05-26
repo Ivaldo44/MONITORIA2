@@ -506,59 +506,67 @@ export default function App() {
     const isAdmin = isCurrentUserAdmin;
 
     try {
-      // Buscar workflow atual da IA
-      const { data: wfData } = await supabase
+      // Buscar workflow atual da IA diretamente do banco (fonte de verdade)
+      const { data: wfData, error: wfError } = await supabase
         .from("approval_workflows")
-        .select("*, steps:approval_steps(*)")
+        .select("id, current_step, final_status, ia_record_id")
         .eq("ia_record_id", recordId)
-        .single();
+        .maybeSingle();
 
-      if (wfData) {
+      if (wfData && !wfError) {
         const currentStep = wfData.current_step;
         const totalSteps = approvalConfig.steps.length;
         const stepConfig = approvalConfig.steps.find(s => s.stepNumber === currentStep);
         const isOpinionOnly = stepConfig?.isOpinionOnly ?? false;
 
-        // Registrar decisão na etapa atual
-        const decisionStatus = status === StatusAuditoria.APROVADO ? "aprovado" :
-                               status === StatusAuditoria.NEGADO ? "negado" : "aguardando";
+        // 1. Registrar decisão na etapa atual (buscar step pelo workflow_id + step_number)
+        const decisionStatus = isOpinionOnly
+          ? "opiniao"
+          : status === StatusAuditoria.APROVADO ? "aprovado" : "negado";
 
-        await supabase
+        const { data: stepData } = await supabase
           .from("approval_steps")
-          .update({
-            status: isOpinionOnly ? "opiniao" : decisionStatus,
-            comment: comment || null,
-            decided_at: new Date().toISOString(),
-          })
+          .select("id")
           .eq("workflow_id", wfData.id)
-          .eq("step_number", currentStep);
+          .eq("step_number", currentStep)
+          .maybeSingle();
 
-        // Determinar próximo passo
-        let nextStep = currentStep + 1;
-        let finalStatus = "pendente";
+        if (stepData) {
+          await supabase
+            .from("approval_steps")
+            .update({
+              status: decisionStatus,
+              comment: comment || null,
+              decided_at: new Date().toISOString(),
+            })
+            .eq("id", stepData.id);
+        }
+
+        // 2. Determinar o que acontece após esta decisão
+        const nextStep = currentStep + 1;
         let newAuditStatus = StatusAuditoria.PENDENTE;
         let newStatusUso = StatusUso.EM_AVALIACAO;
 
         if (!isOpinionOnly && status === StatusAuditoria.NEGADO) {
-          // Negado por etapa bloqueante → encerra imediatamente
-          finalStatus = "negado";
-          newAuditStatus = StatusAuditoria.NEGADO;
-          newStatusUso = StatusUso.NAO_APROVADO;
+          // Etapa bloqueante negou → encerra como negado
           await supabase
             .from("approval_workflows")
             .update({ current_step: currentStep, final_status: "negado", completed_at: new Date().toISOString() })
             .eq("id", wfData.id);
+          newAuditStatus = StatusAuditoria.NEGADO;
+          newStatusUso = StatusUso.NAO_APROVADO;
+
         } else if (nextStep > totalSteps) {
-          // Última etapa aprovada → IA aprovada
-          finalStatus = "aprovado";
-          newAuditStatus = StatusAuditoria.APROVADO;
-          newStatusUso = StatusUso.APROVADO;
+          // Era a última etapa e foi aprovada (ou opinião) → aprovado final
           await supabase
             .from("approval_workflows")
             .update({ current_step: nextStep, final_status: "aprovado", completed_at: new Date().toISOString() })
             .eq("id", wfData.id);
+          newAuditStatus = StatusAuditoria.APROVADO;
+          newStatusUso = StatusUso.APROVADO;
+
         } else {
-          // Avança para próxima etapa
+          // Avança para próxima etapa — IA continua pendente
           await supabase
             .from("approval_workflows")
             .update({ current_step: nextStep })
@@ -567,52 +575,63 @@ export default function App() {
           newStatusUso = StatusUso.EM_AVALIACAO;
         }
 
-        // Atualizar o registro da IA com o novo status
+        // 3. Atualizar o registro da IA
         const actionLabel = status === StatusAuditoria.APROVADO
-          ? `Etapa ${currentStep} aprovada por ${stepConfig?.roleName ?? "Responsável"}`
+          ? `Etapa ${currentStep}/${totalSteps} aprovada — ${stepConfig?.roleName ?? "Responsável"}`
           : status === StatusAuditoria.NEGADO
-            ? `Etapa ${currentStep} negada por ${stepConfig?.roleName ?? "Responsável"}`
+            ? `Etapa ${currentStep}/${totalSteps} negada — ${stepConfig?.roleName ?? "Responsável"}`
             : "Revisão de Status";
-
-        const historyEntry = {
-          date: new Date().toISOString(),
-          user: profile?.full_name || "Admin",
-          action: actionLabel,
-          message: comment || actionLabel
-        };
 
         const updatedRecord = {
           ...record,
           statusAuditoria: newAuditStatus,
           statusUso: newStatusUso,
-          historico: [historyEntry, ...(record.historico || [])]
+          historico: [{
+            date: new Date().toISOString(),
+            user: profile?.full_name || "Admin",
+            action: actionLabel,
+            message: comment || actionLabel
+          }, ...(record.historico || [])]
         };
 
         setRecords(prev => prev.map(r => r.id === recordId ? updatedRecord : r));
         await updateRecord(updatedRecord, user?.id, isAdmin);
 
       } else {
-        // Sem workflow — comportamento simples (compatibilidade)
-        const newStatusUso = status === StatusAuditoria.APROVADO
-          ? StatusUso.APROVADO
-          : status === StatusAuditoria.NEGADO
-          ? StatusUso.NAO_APROVADO
-          : StatusUso.EM_AVALIACAO;
+        // IA sem workflow no banco → criar workflow agora e iniciar na etapa 1
+        // Isso cobre IAs cadastradas antes do sistema de aprovação
+        const { data: newWf } = await supabase
+          .from("approval_workflows")
+          .insert({ ia_record_id: recordId, current_step: 1, final_status: "pendente" })
+          .select()
+          .single();
 
-        const historyEntry = {
-          date: new Date().toISOString(),
-          user: profile?.full_name || "Admin",
-          action: status === StatusAuditoria.APROVADO ? "Aprovação" : status === StatusAuditoria.NEGADO ? "Reprovação" : "Revisão",
-          message: comment || `Status atualizado para ${status}`
-        };
+        if (newWf) {
+          const stepsToInsert = approvalConfig.steps.map(step => ({
+            workflow_id: newWf.id,
+            ia_record_id: recordId,
+            step_number: step.stepNumber,
+            role_name: step.roleName,
+            assigned_user_id: step.userId || null,
+            assigned_user_name: step.userName || null,
+            status: "aguardando",
+            is_opinion_only: step.isOpinionOnly || false,
+          }));
+          await supabase.from("approval_steps").insert(stepsToInsert);
+        }
 
+        // Manter a IA como pendente — não aprovar direto
         const updatedRecord = {
           ...record,
-          statusAuditoria: status,
-          statusUso: newStatusUso,
-          historico: [historyEntry, ...(record.historico || [])]
+          statusAuditoria: StatusAuditoria.PENDENTE,
+          statusUso: StatusUso.EM_AVALIACAO,
+          historico: [{
+            date: new Date().toISOString(),
+            user: profile?.full_name || "Admin",
+            action: "Fluxo de aprovação iniciado",
+            message: "Workflow criado — aguardando etapa 1"
+          }, ...(record.historico || [])]
         };
-
         setRecords(prev => prev.map(r => r.id === recordId ? updatedRecord : r));
         await updateRecord(updatedRecord, user?.id, isAdmin);
       }
