@@ -25,7 +25,9 @@ export default function AdminPanel({
   onUpdateStatus, 
   onViewRecord, 
   onUpdateUserRole,
-  onDeleteUser
+  onDeleteUser,
+  approvalConfig,
+  onSaveApprovalConfig
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("approvals");
   const [workflowConfig, setWorkflowConfig] = useState<ApprovalConfig["steps"]>(
