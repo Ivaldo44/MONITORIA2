@@ -204,7 +204,7 @@ export default function AdminPanel({
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setSelectedSector(null); setSelectedUser(null); }}
-              className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              className={`px-4 xl:px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                 activeTab === tab 
                 ? "bg-white text-[#03440c] shadow-sm border border-slate-200" 
                 : "text-slate-700 hover:text-slate-950"
@@ -918,11 +918,7 @@ export default function AdminPanel({
                 {workflowConfig.map((step, idx) => (
                   <div key={step.stepNumber} className="glass border border-[var(--border-lab)] rounded-2xl p-6">
                     <div className="flex items-center gap-4 mb-4">
-                      <div className={`size-10 rounded-xl flex items-center justify-center font-black text-sm border ${
-                        step.isOpinionOnly
-                          ? "bg-amber-500/10 border-amber-500/30 text-amber-500"
-                          : "bg-brand-green/10 border-brand-green/30 text-brand-green"
-                      }`}>
+                      <div className="size-10 rounded-xl flex items-center justify-center font-black text-sm border bg-brand-green/10 border-brand-green/30 text-brand-green">
                         {step.stepNumber}
                       </div>
                       <div className="flex-1">
@@ -939,25 +935,7 @@ export default function AdminPanel({
                         />
                         <p className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1">Nome do papel/cargo</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Apenas Opinião</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = [...workflowConfig];
-                            updated[idx] = { ...updated[idx], isOpinionOnly: !updated[idx].isOpinionOnly };
-                            setWorkflowConfig(updated);
-                            setWorkflowSaved(false);
-                          }}
-                          className={`relative w-10 h-5 rounded-full transition-all border ${
-                            step.isOpinionOnly
-                              ? "bg-amber-500 border-amber-500"
-                              : "bg-black/10 border-[var(--border-lab)]"
-                          }`}
-                        >
-                          <div className={`absolute top-0.5 size-4 rounded-full bg-white shadow transition-all ${step.isOpinionOnly ? "left-5" : "left-0.5"}`} />
-                        </button>
-                      </div>
+
                     </div>
 
                     <div className="space-y-2">
@@ -984,27 +962,57 @@ export default function AdminPanel({
                       </select>
                     </div>
 
-                    {step.isOpinionOnly && (
-                      <p className="mt-3 text-[9px] text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 font-bold uppercase tracking-wide">
-                        ⚠ Esta etapa é apenas uma opinião — mesmo que negada, a IA avança para a próxima etapa.
-                      </p>
-                    )}
+
                   </div>
                 ))}
               </div>
 
-              <button
-                onClick={() => {
-                  if (onSaveApprovalConfig) {
-                    onSaveApprovalConfig({ steps: workflowConfig });
-                    setWorkflowSaved(true);
-                    setTimeout(() => setWorkflowSaved(false), 3000);
-                  }
-                }}
-                className="w-full py-4 bg-gradient-to-r from-brand-green to-lab-cyan text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-lg hover:shadow-lab-cyan/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
-              >
-                Salvar Configuração do Fluxo
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    if (onSaveApprovalConfig) {
+                      onSaveApprovalConfig({ steps: workflowConfig });
+                      setWorkflowSaved(true);
+                      setTimeout(() => setWorkflowSaved(false), 4000);
+                    }
+                  }}
+                  className={`w-full py-4 font-black uppercase text-xs tracking-widest rounded-2xl transition-all active:scale-[0.99] flex items-center justify-center gap-2 relative overflow-hidden ${
+                    workflowSaved
+                      ? "bg-brand-green text-white shadow-[0_0_30px_rgba(0,209,54,0.5)] scale-[1.01]"
+                      : "bg-gradient-to-r from-brand-green to-lab-cyan text-white shadow-lg hover:shadow-lab-cyan/30"
+                  }`}
+                >
+                  {/* Brilho animado ao salvar */}
+                  {workflowSaved && (
+                    <motion.div
+                      initial={{ x: "-100%", opacity: 0.6 }}
+                      animate={{ x: "200%", opacity: 0 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="absolute inset-0 w-1/3 bg-white/40 skew-x-[-20deg] pointer-events-none"
+                    />
+                  )}
+                  {workflowSaved ? (
+                    <>
+                      <CheckCircle2 size={16} className="animate-bounce" />
+                      Fluxo configurado com sucesso!
+                    </>
+                  ) : (
+                    <>
+                      Salvar Configuração do Fluxo
+                    </>
+                  )}
+                </button>
+                {workflowSaved && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center text-[10px] font-black text-brand-green uppercase tracking-widest mt-2"
+                  >
+                    As etapas foram atualizadas e já estão em vigor.
+                  </motion.p>
+                )}
+              </div>
             </div>
           )}
         </motion.div>
