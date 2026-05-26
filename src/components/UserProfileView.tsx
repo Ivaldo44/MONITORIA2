@@ -213,13 +213,8 @@ export const UserProfileView: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1 flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">
                     Setor
-                    {profile?.role !== "admin" && (
-                      <span className="text-[9px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                        🔒 Definido no cadastro
-                      </span>
-                    )}
                   </label>
                   <div className="relative">
                     <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={18} />
