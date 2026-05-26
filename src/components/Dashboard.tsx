@@ -195,110 +195,112 @@ export default function Dashboard({ records, onNavigate, isAdmin, workflows = []
         ))}
       </div>
 
-      {!isAdmin && (
-        <div className="glass p-8 rounded-[2.5rem] border border-lab-cyan/20 bg-gradient-to-br from-lab-cyan/[0.03] to-transparent">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="size-12 rounded-2xl bg-lab-cyan/10 flex items-center justify-center text-lab-cyan border border-lab-cyan/20">
-              <Activity size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-[var(--text-bright)] uppercase tracking-tight">Painel de Acompanhamento</h3>
-              <p className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest">Acompanhe o processo de aprovação das suas IAs</p>
-            </div>
-          </div>
+      {!isAdmin && (() => {
+        // Só mostrar IAs que estão pendentes (em análise)
+        const pendingRecords = records.filter(r =>
+          r.statusAuditoria === StatusAuditoria.PENDENTE ||
+          (!r.statusAuditoria)
+        );
 
-          <div className="space-y-4">
-            {records.length > 0 ? records.slice(0, 5).map((r) => {
-              const wf = workflows.find(w => w.iaRecordId === r.id);
-              const steps = approvalConfig?.steps || [
-                { stepNumber: 1, roleName: "Coordenador NIT" },
-                { stepNumber: 2, roleName: "Gerente NIT" },
-                { stepNumber: 3, roleName: "Gerente TI" },
-                { stepNumber: 4, roleName: "Análise Financeira" },
-                { stepNumber: 5, roleName: "Presidência" },
-              ];
-              const totalSteps = steps.length;
-              const currentStep = wf?.currentStep ?? 1;
-              const finalStatus = wf?.finalStatus ?? "pendente";
-              const progressPct = finalStatus === "aprovado" ? 100 : finalStatus === "negado" ? 100 : Math.round(((currentStep - 1) / totalSteps) * 100);
-              const currentRole = steps.find(s => s.stepNumber === currentStep)?.roleName ?? "Em análise";
+        if (pendingRecords.length === 0) return null;
 
-              const isAprovado = r.statusAuditoria === StatusAuditoria.APROVADO || finalStatus === "aprovado";
-              const isNegado = r.statusAuditoria === StatusAuditoria.NEGADO || finalStatus === "negado";
+        const steps = approvalConfig?.steps?.length
+          ? approvalConfig.steps
+          : [
+              { stepNumber: 1, roleName: "Coordenador NIT" },
+              { stepNumber: 2, roleName: "Gerente NIT" },
+              { stepNumber: 3, roleName: "Gerente TI" },
+              { stepNumber: 4, roleName: "Análise Financeira" },
+              { stepNumber: 5, roleName: "Presidência" },
+            ];
+        const totalSteps = steps.length;
 
-              return (
-                <div key={r.id} className="p-5 rounded-2xl bg-black/5 border border-[var(--border-lab)] space-y-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black text-brand-green/80 bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded uppercase">{r.id}</span>
-                      <h4 className="font-bold text-[var(--text-bright)] truncate uppercase text-sm">{r.nomeFerramenta}</h4>
-                    </div>
-                    {isAprovado ? (
-                      <span className="flex items-center gap-1 text-[10px] font-black text-brand-green bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded uppercase">
-                        <CheckCircle2 size={10} /> Aprovada
-                      </span>
-                    ) : isNegado ? (
-                      <span className="flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded uppercase">
-                        <ShieldX size={10} /> Indeferida
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded uppercase">
-                        <Clock size={10} /> Em Análise
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Barra de progresso */}
-                  <div className="space-y-1.5">
-                    <div className="h-2 w-full bg-black/10 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPct}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className={`h-full rounded-full ${isAprovado ? "bg-brand-green" : isNegado ? "bg-red-500" : "bg-amber-400"}`}
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
-                        {isAprovado ? "✓ Aprovada por todas as etapas" : isNegado ? "✗ Indeferida" : `Aguardando: ${currentRole}`}
-                      </p>
-                      <p className="text-[9px] text-[var(--text-muted)] font-bold">{progressPct}%</p>
-                    </div>
-                  </div>
-
-                  {/* Etapas visuais */}
-                  <div className="flex items-center gap-1 pt-1">
-                    {steps.map((step) => {
-                      const wfStep = wf?.steps?.find(s => s.stepNumber === step.stepNumber);
-                      const stepStatus = wfStep?.status ?? (step.stepNumber < currentStep ? "aprovado" : step.stepNumber === currentStep && !isAprovado && !isNegado ? "aguardando" : "pendente");
-                      return (
-                        <div key={step.stepNumber} className="flex-1 flex flex-col items-center gap-1">
-                          <div className={`size-5 rounded-full flex items-center justify-center text-[8px] font-black border transition-all ${
-                            stepStatus === "aprovado" ? "bg-brand-green border-brand-green text-white" :
-                            stepStatus === "negado" ? "bg-red-500 border-red-500 text-white" :
-                            stepStatus === "aguardando" ? "bg-amber-100 border-amber-400 text-amber-600 animate-pulse" :
-                            "bg-black/5 border-black/10 text-[var(--text-muted)]"
-                          }`}>
-                            {step.stepNumber}
-                          </div>
-                          <span className="text-[7px] text-[var(--text-muted)] font-bold text-center leading-tight hidden sm:block" style={{maxWidth: "50px"}}>
-                            {step.roleName.split(" ").slice(-1)[0]}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            }) : (
-              <div className="py-10 flex flex-col items-center justify-center text-center space-y-3 opacity-60">
-                <CheckCircle2 size={32} className="text-brand-green" />
-                <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-widest">Nenhuma IA cadastrada ainda</p>
+        return (
+          <div className="glass p-8 rounded-[2.5rem] border border-lab-cyan/20 bg-gradient-to-br from-lab-cyan/[0.03] to-transparent">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="size-12 rounded-2xl bg-lab-cyan/10 flex items-center justify-center text-lab-cyan border border-lab-cyan/20">
+                <Activity size={24} />
               </div>
-            )}
+              <div>
+                <h3 className="text-xl font-black text-[var(--text-bright)] uppercase tracking-tight">Painel de Acompanhamento</h3>
+                <p className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest">
+                  {pendingRecords.length} IA{pendingRecords.length > 1 ? "s" : ""} aguardando aprovação
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {pendingRecords.slice(0, 5).map((r) => {
+                const wf = workflows.find(w => w.iaRecordId === r.id);
+                // currentStep do banco é a etapa que está aguardando decisão
+                const currentStep = wf?.currentStep ?? 1;
+                // progressPct: etapas já concluídas / total
+                const completedSteps = currentStep - 1;
+                const progressPct = Math.round((completedSteps / totalSteps) * 100);
+                const currentRole = steps.find(s => s.stepNumber === currentStep)?.roleName ?? "Em análise";
+
+                return (
+                  <div key={r.id} className="p-5 rounded-2xl bg-black/5 border border-[var(--border-lab)] space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black text-brand-green/80 bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded uppercase">{r.id}</span>
+                        <h4 className="font-bold text-[var(--text-bright)] truncate uppercase text-sm">{r.nomeFerramenta}</h4>
+                      </div>
+                      <span className="flex items-center gap-1 text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded uppercase">
+                        <Clock size={10} /> Etapa {currentStep}/{totalSteps}
+                      </span>
+                    </div>
+
+                    {/* Barra de progresso */}
+                    <div className="space-y-1.5">
+                      <div className="h-2 w-full bg-black/10 rounded-full overflow-hidden">
+                        <motion.div
+                          key={`${r.id}-${currentStep}`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progressPct}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="h-full rounded-full bg-amber-400"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
+                          Aguardando: {currentRole}
+                        </p>
+                        <p className="text-[9px] text-[var(--text-muted)] font-bold">{progressPct}%</p>
+                      </div>
+                    </div>
+
+                    {/* Etapas visuais */}
+                    <div className="flex items-center gap-1 pt-1">
+                      {steps.map((step) => {
+                        const wfStep = wf?.steps?.find(s => s.stepNumber === step.stepNumber);
+                        const isCompleted = wfStep?.status === "aprovado" || wfStep?.status === "opiniao" || step.stepNumber < currentStep;
+                        const isActive = step.stepNumber === currentStep;
+                        const isBlocked = wfStep?.status === "negado";
+                        return (
+                          <div key={step.stepNumber} className="flex-1 flex flex-col items-center gap-1">
+                            <div className={`size-5 rounded-full flex items-center justify-center text-[8px] font-black border transition-all ${
+                              isBlocked  ? "bg-red-500 border-red-500 text-white" :
+                              isCompleted ? "bg-brand-green border-brand-green text-white" :
+                              isActive    ? "bg-amber-100 border-amber-400 text-amber-600 animate-pulse" :
+                              "bg-black/5 border-black/10 text-[var(--text-muted)]"
+                            }`}>
+                              {step.stepNumber}
+                            </div>
+                            <span className="text-[7px] text-[var(--text-muted)] font-bold text-center leading-tight hidden sm:block" style={{maxWidth: "50px"}}>
+                              {step.roleName.split(" ").slice(-1)[0]}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="grid grid-cols-12 gap-8">
         {/* Governance & Risk Alerts Table */}
